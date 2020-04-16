@@ -1,57 +1,36 @@
 package com.gildedrose
 
 class GildedRose(val items: Array[Item]) {
+  private def decreaseQuality(item: Item, amount: Int): Unit = {
+    item.quality = Math.max(Item.minQuality, item.quality - amount)
+  }
 
+  private def increaseQuality(item: Item, amount: Int): Unit = {
+    item.quality = Math.min(Item.maxQuality, item.quality + amount)
+  }
 
   def updateQuality() {
-    for (i <- 0 until items.length) {
-      if (!items(i).name.equals("Aged Brie")
-        && !items(i).name.equals("Backstage passes to a TAFKAL80ETC concert")) {
-        if (items(i).quality > 0) {
-          if (!items(i).name.equals("Sulfuras, Hand of Ragnaros")) {
-            items(i).quality = items(i).quality - 1
-          }
-        }
-      } else {
-        if (items(i).quality < 50) {
-          items(i).quality = items(i).quality + 1
+    items.filter(_.name != Item.sulfuras).foreach { item =>
+      item.sellIn -= 1
 
-          if (items(i).name.equals("Backstage passes to a TAFKAL80ETC concert")) {
-            if (items(i).sellIn < 11) {
-              if (items(i).quality < 50) {
-                items(i).quality = items(i).quality + 1
-              }
-            }
+      val conjured = item.name.toLowerCase.trim.startsWith("conjured")
 
-            if (items(i).sellIn < 6) {
-              if (items(i).quality < 50) {
-                items(i).quality = items(i).quality + 1
-              }
-            }
-          }
-        }
-      }
-
-      if (!items(i).name.equals("Sulfuras, Hand of Ragnaros")) {
-        items(i).sellIn = items(i).sellIn - 1
-      }
-
-      if (items(i).sellIn < 0) {
-        if (!items(i).name.equals("Aged Brie")) {
-          if (!items(i).name.equals("Backstage passes to a TAFKAL80ETC concert")) {
-            if (items(i).quality > 0) {
-              if (!items(i).name.equals("Sulfuras, Hand of Ragnaros")) {
-                items(i).quality = items(i).quality - 1
-              }
-            }
-          } else {
-            items(i).quality = items(i).quality - items(i).quality
-          }
-        } else {
-          if (items(i).quality < 50) {
-            items(i).quality = items(i).quality + 1
-          }
-        }
+      val sellInFactor = if (item.sellIn < 0) 2 else 1
+      item.name match {
+        case Item.backstagePass if item.sellIn < 0 =>
+          item.quality = Item.minQuality
+        case Item.backstagePass if item.sellIn < 5 =>
+          increaseQuality(item, 3)
+        case Item.backstagePass if item.sellIn < 10 =>
+          increaseQuality(item, 2)
+        case Item.backstagePass =>
+          increaseQuality(item, 1)
+        case Item.agedBrie =>
+          increaseQuality(item, 1 * sellInFactor)
+        case _ if conjured =>
+          decreaseQuality(item, 2 * 1 * sellInFactor)
+        case _ =>
+          decreaseQuality(item, 1 * sellInFactor)
       }
     }
   }
